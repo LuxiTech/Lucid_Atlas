@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Luxi Atlas Web Control</title>
+    <link rel="stylesheet" href="./styles.css?v=27" />
+    <script src="./vendor/roslib.min.js?v=22"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar">
+        <div>
+          <h1>Luxi Atlas</h1>
+          <p id="subtitle">Same WiFi Web Control Demo</p>
+        </div>
+        <div id="connection-pill" class="pill offline">未连接</div>
+      </section>
+
+      <section class="content-grid">
+        <section class="viewport">
+          <div class="map-toolbar">
+            <label><input id="layer-grid" type="checkbox" checked /> 栅格</label>
+            <label><input id="layer-costmap" type="checkbox" /> 代价地图</label>
+            <label><input id="layer-static-cloud" type="checkbox" checked /> 地图点云</label>
+            <label><input id="layer-live-cloud" type="checkbox" checked /> 实时点云</label>
+            <label><input id="layer-saved-map" type="checkbox" checked /> 离线地图</label>
+            <label><input id="layer-nav-path" type="checkbox" checked /> 导航路径</label>
+            <label><input id="layer-local-path" type="checkbox" checked /> 局部路径</label>
+            <label><input id="layer-pose" type="checkbox" checked /> 机器人</label>
+            <div class="view-mode-controls">
+              <button id="view-2d-btn" type="button" class="secondary compact active">2D</button>
+              <button id="view-3d-btn" type="button" class="secondary compact">3D</button>
+            </div>
+            <div class="map-zoom-controls">
+              <button id="zoom-out-btn" type="button" class="secondary compact" aria-label="缩小地图">-</button>
+              <span id="map-zoom-label">1.0x</span>
+              <button id="zoom-in-btn" type="button" class="secondary compact" aria-label="放大地图">+</button>
+            </div>
+            <button id="reset-map-view-btn" type="button" class="secondary compact">复位</button>
+          </div>
+          <canvas id="map-canvas" width="900" height="620"></canvas>
+          <canvas id="cloud3d-canvas" width="900" height="620" hidden></canvas>
+          <div id="map-status" class="map-status">雷达地图：等待数据</div>
+        </section>
+
+        <aside class="control-panel">
+          <section class="panel-section">
+            <h2>局域网连接</h2>
+            <label class="field">
+              <span>控制 API</span>
+              <input id="ws-url" type="text" autocomplete="off" />
+            </label>
+            <div class="button-row">
+              <button id="connect-btn" type="button">刷新</button>
+              <button id="disconnect-btn" type="button" class="secondary">离线</button>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>手动控制</h2>
+            <div class="manual-joystick-panel" aria-label="manual velocity">
+              <div id="manual-joystick-pad" class="manual-joystick-pad">
+                <div class="manual-joystick-cross horizontal"></div>
+                <div class="manual-joystick-cross vertical"></div>
+                <div id="manual-joystick-knob" class="manual-joystick-knob"></div>
+              </div>
+              <div class="manual-velocity-readout">
+                <span>vx <output id="manual-vx-value">0.00</output> m/s</span>
+                <span>vy <output id="manual-vy-value">0.00</output> m/s</span>
+              </div>
+              <label class="manual-slider">
+                <span>原地旋转</span>
+                <output id="manual-wz-value">0.00 rad/s</output>
+                <input id="manual-wz-slider" type="range" min="-100" max="100" value="0" />
+              </label>
+            </div>
+            <div class="safety-row">
+              <button id="zero-btn" type="button" class="secondary stop-lite">停止</button>
+              <button id="estop-btn" type="button" class="danger">急停</button>
+              <button id="release-estop-btn" type="button" class="secondary">解除</button>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>建图</h2>
+            <label class="field">
+              <span>地图名称</span>
+              <input id="mapping-map-name" type="text" value="test_map" autocomplete="off" />
+            </label>
+            <div class="button-row">
+              <button id="start-mapping-btn" type="button">开始建图</button>
+              <button id="stop-mapping-btn" type="button" class="secondary" disabled>停止建图</button>
+            </div>
+            <button id="save-mapping-btn" type="button" class="secondary full-button">保存PCD</button>
+            <div id="mapping-preview-panel" class="mapping-preview-panel" hidden>
+              <canvas id="mapping-preview-canvas" width="300" height="220"></canvas>
+              <div id="mapping-preview-status" class="mapping-preview-status">建图点云：等待数据</div>
+            </div>
+            <div class="mapping-filter-row">
+              <label class="check-field">
+                <input id="mapping-height-filter-enabled" type="checkbox" />
+                <span>高度过滤</span>
+              </label>
+              <label class="field compact-field">
+                <span>最高 Z(m)</span>
+                <input id="mapping-height-max-z" type="number" value="1.5" step="0.1" />
+              </label>
+            </div>
+            <pre id="mapping-status" class="compact-status">等待数据</pre>
+          </section>
+
+          <section class="panel-section">
+            <h2>地图查看</h2>
+            <label class="field">
+              <span>已保存地图</span>
+              <select id="saved-map-select"></select>
+            </label>
+            <div class="button-row">
+              <button id="refresh-maps-btn" type="button" class="secondary">刷新列表</button>
+              <button id="load-saved-map-btn" type="button" class="secondary">加载地图</button>
+            </div>
+            <button id="convert-saved-map-btn" type="button" class="secondary full-button">转换当前地图</button>
+            <pre id="saved-map-status" class="compact-status">等待数据</pre>
+          </section>
+
+          <section class="panel-section">
+            <h2>导航目标</h2>
+            <div class="target-grid">
+              <label>X <input id="goal-x" type="number" value="1.0" step="0.1" /></label>
+              <label>Y <input id="goal-y" type="number" value="0.0" step="0.1" /></label>
+              <label>Yaw <input id="goal-yaw" type="number" value="0.0" step="0.1" /></label>
+            </div>
+            <button id="pick-goal-btn" type="button" class="secondary full-button">点选目标并规划</button>
+            <button id="send-goal-btn" type="button" class="secondary full-button">发送目标</button>
+            <div class="button-row">
+              <button id="nav-start-btn" type="button">出发</button>
+              <button id="nav-stop-btn" type="button" class="secondary">停止导航</button>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>定位初始位姿</h2>
+            <div class="target-grid">
+              <label>X <input id="initial-x" type="number" value="0.0" step="0.1" /></label>
+              <label>Y <input id="initial-y" type="number" value="0.0" step="0.1" /></label>
+              <label>Yaw <input id="initial-yaw" type="number" value="0.0" step="0.1" /></label>
+            </div>
+            <button id="pick-initial-pose-btn" type="button" class="secondary full-button">点选位置和方向</button>
+            <button id="send-initial-pose-btn" type="button" class="secondary full-button">设置初始位姿</button>
+          </section>
+
+          <section class="panel-section">
+            <h2>RGB 相机</h2>
+            <div class="button-row">
+              <button id="show-camera-btn" type="button" class="secondary">显示RGB</button>
+              <button id="hide-camera-btn" type="button" class="secondary">停止</button>
+            </div>
+            <label class="field camera-field">
+              <span>曝光时间 us</span>
+              <input id="exposure-time-us" type="number" min="100" max="1000000" step="1000" value="30000" />
+            </label>
+            <button id="apply-exposure-btn" type="button" class="secondary full-button">应用曝光</button>
+            <div id="camera-status" class="camera-status">未开启</div>
+            <div id="camera-panel" class="camera-panel" hidden>
+              <div class="camera-frame">
+                <img id="camera-image" alt="RGB camera" />
+              </div>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="status-grid">
+        <article>
+          <h2>系统</h2>
+          <pre id="system-status">等待数据</pre>
+        </article>
+        <article>
+          <h2>控制</h2>
+          <pre id="control-status">等待数据</pre>
+        </article>
+        <article>
+          <h2>网络</h2>
+          <pre id="network-status">等待数据</pre>
+        </article>
+        <article>
+          <h2>导航</h2>
+          <pre id="nav-status">等待数据</pre>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js?v=53"></script>
+  </body>
+</html>

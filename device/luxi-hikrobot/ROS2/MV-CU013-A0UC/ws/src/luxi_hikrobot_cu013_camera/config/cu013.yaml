@@ -1,0 +1,27 @@
+/**:
+  ros__parameters:
+    camera_index: 0
+    serial_number: ""
+    frame_id: hikrobot_cu013_optical_frame
+    output_image_topic: /hikrobot/cu013/image_raw
+    image_transport_topic: /hikrobot/cu013/rgb_img
+    compressed_image_topic: /hikrobot/cu013/rgb_img/compressed
+    camera_info_topic: /hikrobot/cu013/camera_info
+    publish_compressed: true
+    compressed_jpeg_quality: 55
+    compressed_width: 640
+    compressed_height: 512
+    width: -1
+    height: -1
+    offset_x: -1
+    offset_y: -1
+    exposure_auto: "Continuous"
+    exposure_time_us: 25000.0
+    gain_auto: "Off"
+    gain: 15.0
+    pixel_format: ""
+    external_trigger_enabled: true
+    trigger_source: "Line0"
+    trigger_activation: "RisingEdge"
+    publish_rate: 10.0
+    grab_timeout_ms: 250

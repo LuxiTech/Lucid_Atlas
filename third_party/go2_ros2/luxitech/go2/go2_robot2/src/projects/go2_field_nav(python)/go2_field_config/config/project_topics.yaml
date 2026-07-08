@@ -1,0 +1,8 @@
+go2_field:
+  lidar_scan_topic: /scan
+  pointcloud_topic: /pointcloud
+  odom_topic: /odom
+  cmd_vel_topic: /cmd_vel
+  robot_description_topic: /robot_description
+  joint_states_topic: /joint_states
+

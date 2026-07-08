@@ -1,0 +1,115 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Name: Tool Properties
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Enabled: true
+      Name: Grid
+      Plane: XY
+      Cell Size: 1
+      Color: 160; 160; 160
+      Alpha: 0.5
+    - Alpha: 0.7
+      Class: rviz_default_plugins/Map
+      Enabled: true
+      Name: 2D Grid Map
+      Topic:
+        Value: /map
+      Update Topic:
+        Value: /map_updates
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: Projected PCD Map
+      Topic:
+        Value: /luxi_localization/map_cloud_floor
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: FlatColor
+      Color: 90; 190; 255
+      Alpha: 0.8
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Name: TF
+      Show Axes: true
+      Show Names: true
+      Marker Scale: 1
+    - Class: rviz_default_plugins/Pose
+      Enabled: false
+      Name: Current Pose
+      Topic:
+        Value: /localization_3d
+      Shape: Arrow
+      Color: 255; 80; 50
+      Alpha: 1
+      Shaft Length: 1
+      Shaft Radius: 0.08
+      Head Length: 0.3
+      Head Radius: 0.18
+    - Class: rviz_default_plugins/Marker
+      Enabled: false
+      Name: Current Marker
+      Topic:
+        Value: /luxi_localization/current_marker
+    - Class: rviz_default_plugins/Pose
+      Enabled: true
+      Name: Current Pose 2D
+      Topic:
+        Value: /localization_2d
+      Shape: Arrow
+      Color: 60; 255; 120
+      Alpha: 1
+      Shaft Length: 1
+      Shaft Radius: 0.08
+      Head Length: 0.3
+      Head Radius: 0.18
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Current Marker 2D
+      Topic:
+        Value: /luxi_localization/current_marker_2d
+    - Class: rviz_default_plugins/PointCloud2
+      Enabled: true
+      Name: Projected Aligned Cloud
+      Topic:
+        Value: /luxi_localization/aligned_cloud_floor
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: FlatColor
+      Color: 255; 220; 90
+      Alpha: 0.9
+  Enabled: true
+  Global Options:
+    Background Color: 35; 35; 35
+    Fixed Frame: map
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/SetInitialPose
+      Topic:
+        Value: /initialpose
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 35
+      Focal Point:
+        X: 20
+        Y: 10
+        Z: 0
+      Pitch: 0.8
+      Target Frame: map
+      Yaw: 0.8
+Window Geometry:
+  Height: 900
+  Width: 1400

@@ -1,0 +1,87 @@
+luxi_open3d_localization:
+  ros__parameters:
+    map_path: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/maps/test_map5.pcd
+    map_metadata_path: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/tools/transfrom_tools/pcd_to_pgm/output/test_map5_nav_floor_plane_autofit_h005_050_clean80/map.json
+    input_cloud_topic: /cloud_registered_body
+    odom_topic: /Odometry
+    initial_pose_topic: /initialpose
+
+    map_frame: map
+    odom_frame: camera_init
+    base_frame: base_link
+    cloud_frame_mode: body
+    # FAST-LIO "body" is the Livox/IMU frame. Keep this near zero when the lidar
+    # is mounted close to the robot centerline.
+    base_offset_x: 0.0
+    base_offset_y: 0.0
+    base_offset_z: 0.0
+    base_yaw_offset_deg: 0.0
+    initial_pose_is_base_frame: true
+    max_odom_position_norm: 200.0
+    max_odom_step: 2.0
+    require_initial_pose: true
+    initial_pose_mode: body
+    initial_pose_coordinate_frame: floor
+    initial_pose_z_mode: floor_plane
+    initial_pose_height: 0.0
+    live_floor_alignment_enable: true
+    live_floor_fit_min_points: 800
+    live_floor_fit_distance_threshold: 0.08
+    live_floor_fit_ransac_n: 3
+    live_floor_fit_iterations: 200
+    live_floor_min_inlier_ratio: 0.15
+    live_floor_min_abs_body_z: 0.55
+    live_floor_use_low_height_band: true
+    live_floor_band_min_quantile: 0.05
+    live_floor_band_max_quantile: 0.35
+    live_floor_min_sensor_height: 0.20
+    live_floor_max_sensor_height: 1.50
+    floor_plane: [-0.357093, 0.006594, 0.934045, 1.001688]
+
+    map_voxel_size: 0.25
+    scan_voxel_size: 0.20
+    scan_accumulate_frames: 5
+    local_map_extent_x: 24.0
+    local_map_extent_y: 24.0
+    local_map_extent_z: 6.0
+    max_correspondence_distance: 0.35
+    icp_max_iteration: 40
+
+    min_scan_points: 200
+    min_local_map_points: 1000
+    max_scan_points: 60000
+    min_fitness_to_accept: 0.45
+    max_rmse_to_accept: 0.45
+    max_icp_translation_correction: 0.80
+    max_icp_rotation_correction_deg: 8.0
+    max_initial_icp_translation_correction: 0.60
+    max_initial_icp_rotation_correction_deg: 15.0
+    constrain_icp_to_floor: true
+    icp_correction_smoothing: 0.25
+    initial_icp_correction_smoothing: 0.25
+    enable_multiscale_icp: true
+    coarse_scan_voxel_size: 0.45
+    coarse_map_voxel_size: 0.45
+    coarse_max_correspondence_distance: 0.90
+    initial_coarse_max_correspondence_distance: 1.50
+    coarse_icp_max_iteration: 35
+    enable_alignment_validation: true
+    alignment_max_floor_normal_angle_deg: 8.0
+    alignment_max_dominant_plane_angle_deg: 12.0
+    alignment_validation_min_points: 600
+    alignment_validation_min_inlier_ratio: 0.10
+    alignment_validation_distance_threshold: 0.10
+    alignment_validation_ransac_iterations: 120
+    icp_initial_hold_sec: 3.0
+    icp_required_consecutive_accepts: 3
+    min_update_period_sec: 0.5
+
+    publish_map_cloud: true
+    publish_floor_projected_cloud: true
+    floor_projected_cloud_min_height: 0.15
+    floor_projected_cloud_max_height: 1.60
+    map_publish_period_sec: 5.0
+    publish_tf: true
+    publish_base_tf: true
+    publish_2d_pose: true
+    publish_aligned_cloud: true

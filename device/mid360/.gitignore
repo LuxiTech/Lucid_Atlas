@@ -1,0 +1,16 @@
+# ROS2 workspace artifacts
+/build/
+/install/
+/log/
+
+# Nested project build outputs
+/FAST_LIO_ROS2/build/
+/Livox-SDK2/build/
+/src/livox_ros_driver2/build/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+
+# Editor metadata
+.vscode/

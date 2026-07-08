@@ -1,0 +1,17 @@
+[Unit]
+Description=Luxi Go2 cmd_vel to Unitree Sport API bridge
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/home/nvidia/project/luxi-atlas
+ExecStart=/home/nvidia/project/luxi-atlas/scripts/start_go2_cmd_vel_bridge.sh
+Restart=always
+RestartSec=1
+KillSignal=SIGINT
+TimeoutStopSec=5
+
+[Install]
+WantedBy=default.target

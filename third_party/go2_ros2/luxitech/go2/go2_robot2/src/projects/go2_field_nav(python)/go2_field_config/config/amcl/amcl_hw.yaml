@@ -1,0 +1,19 @@
+amcl:
+  ros__parameters:
+    use_sim_time: false
+    global_frame_id: "map"
+    odom_frame_id: "odom"
+    base_frame_id: "base_link"
+    scan_topic: /scan
+    robot_model_type: "nav2_amcl::OmniMotionModel"
+    min_particles: 800
+    max_particles: 3000
+    laser_model_type: "likelihood_field"
+    laser_min_range: 0.12
+    laser_max_range: 8.0
+    max_beams: 120
+    update_min_d: 0.05
+    update_min_a: 0.08
+    transform_tolerance: 1.0
+    set_initial_pose: false
+

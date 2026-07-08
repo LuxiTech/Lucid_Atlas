@@ -1,0 +1,128 @@
+nvidia@ubuntu:~$ source /opt/ros/humble/setup.bash
+
+ros2 run camera_calibration cameracalibrator \
+  --no-service-check \
+  --size 11x8 \
+  --square 0.010 \
+  --camera_name luxi_cu013 \
+  image:=/hikrobot/cu013/rgb_img \
+  camera:=/hikrobot/cu013
+[WARN] [1781749069.047756933] [rcl]: Found remap rule 'image:=/hikrobot/cu013/rgb_img'. This syntax is deprecated. Use '--ros-args --remap image:=/hikrobot/cu013/rgb_img' instead.
+[WARN] [1781749069.047847400] [rcl]: Found remap rule 'camera:=/hikrobot/cu013'. This syntax is deprecated. Use '--ros-args --remap camera:=/hikrobot/cu013' instead.
+[WARN] [1781749069.060446860] [rcl]: Found remap rule 'image:=/hikrobot/cu013/rgb_img'. This syntax is deprecated. Use '--ros-args --remap image:=/hikrobot/cu013/rgb_img' instead.
+[WARN] [1781749069.060510574] [rcl]: Found remap rule 'camera:=/hikrobot/cu013'. This syntax is deprecated. Use '--ros-args --remap camera:=/hikrobot/cu013' instead.
+[WARN] [1781749069.285170930] [cameracalibrator]: No publishers available for topic /left. Using system default QoS for subscriber.
+[WARN] [1781749069.293423749] [cameracalibrator]: No publishers available for topic /right. Using system default QoS for subscriber.
+*** Added sample 1, p_x = 0.526, p_y = 0.231, p_size = 0.326, skew = 0.068
+*** Added sample 2, p_x = 0.570, p_y = 0.330, p_size = 0.299, skew = 0.101
+*** Added sample 3, p_x = 0.552, p_y = 0.377, p_size = 0.264, skew = 0.206
+*** Added sample 4, p_x = 0.471, p_y = 0.399, p_size = 0.294, skew = 0.058
+*** Added sample 5, p_x = 0.497, p_y = 0.288, p_size = 0.192, skew = 0.028
+*** Added sample 6, p_x = 0.469, p_y = 0.177, p_size = 0.221, skew = 0.064
+*** Added sample 7, p_x = 0.488, p_y = 0.532, p_size = 0.256, skew = 0.037
+*** Added sample 8, p_x = 0.353, p_y = 0.365, p_size = 0.290, skew = 0.007
+*** Added sample 9, p_x = 0.381, p_y = 0.387, p_size = 0.284, skew = 0.155
+*** Added sample 10, p_x = 0.360, p_y = 0.375, p_size = 0.272, skew = 0.311
+*** Added sample 11, p_x = 0.312, p_y = 0.474, p_size = 0.270, skew = 0.110
+*** Added sample 12, p_x = 0.500, p_y = 0.495, p_size = 0.382, skew = 0.009
+*** Added sample 13, p_x = 0.439, p_y = 0.335, p_size = 0.383, skew = 0.017
+*** Added sample 14, p_x = 0.567, p_y = 0.123, p_size = 0.354, skew = 0.015
+*** Added sample 15, p_x = 0.602, p_y = 0.087, p_size = 0.275, skew = 0.103
+*** Added sample 16, p_x = 0.623, p_y = 0.036, p_size = 0.260, skew = 0.295
+*** Added sample 17, p_x = 0.579, p_y = 0.406, p_size = 0.340, skew = 0.018
+*** Added sample 18, p_x = 0.498, p_y = 0.519, p_size = 0.299, skew = 0.179
+*** Added sample 19, p_x = 0.461, p_y = 0.484, p_size = 0.300, skew = 0.316
+*** Added sample 20, p_x = 0.351, p_y = 0.513, p_size = 0.325, skew = 0.041
+*** Added sample 21, p_x = 0.440, p_y = 0.595, p_size = 0.355, skew = 0.039
+*** Added sample 22, p_x = 0.578, p_y = 0.600, p_size = 0.361, skew = 0.093
+*** Added sample 23, p_x = 0.650, p_y = 0.547, p_size = 0.332, skew = 0.142
+*** Added sample 24, p_x = 0.508, p_y = 0.666, p_size = 0.316, skew = 0.009
+*** Added sample 25, p_x = 0.608, p_y = 0.408, p_size = 0.297, skew = 0.318
+*** Added sample 26, p_x = 0.577, p_y = 0.447, p_size = 0.462, skew = 0.062
+*** Added sample 27, p_x = 0.568, p_y = 0.665, p_size = 0.478, skew = 0.077
+*** Added sample 28, p_x = 0.606, p_y = 0.345, p_size = 0.484, skew = 0.009
+*** Added sample 29, p_x = 0.445, p_y = 0.487, p_size = 0.493, skew = 0.035
+*** Added sample 30, p_x = 0.488, p_y = 0.584, p_size = 0.456, skew = 0.128
+*** Added sample 31, p_x = 0.561, p_y = 0.545, p_size = 0.434, skew = 0.206
+*** Added sample 32, p_x = 0.625, p_y = 0.556, p_size = 0.423, skew = 0.027
+*** Added sample 33, p_x = 0.635, p_y = 0.268, p_size = 0.415, skew = 0.075
+*** Added sample 34, p_x = 0.601, p_y = 0.161, p_size = 0.430, skew = 0.124
+*** Added sample 35, p_x = 0.709, p_y = 0.444, p_size = 0.424, skew = 0.004
+*** Added sample 36, p_x = 0.788, p_y = 0.427, p_size = 0.373, skew = 0.063
+*** Added sample 37, p_x = 0.851, p_y = 0.328, p_size = 0.366, skew = 0.096
+*** Added sample 38, p_x = 0.805, p_y = 0.192, p_size = 0.370, skew = 0.052
+*** Added sample 39, p_x = 0.527, p_y = 0.579, p_size = 0.315, skew = 0.283
+*** Added sample 40, p_x = 0.271, p_y = 0.584, p_size = 0.346, skew = 0.000
+*** Added sample 41, p_x = 0.436, p_y = 0.143, p_size = 0.391, skew = 0.086
+*** Added sample 42, p_x = 0.304, p_y = 0.353, p_size = 0.343, skew = 0.101
+*** Added sample 43, p_x = 0.261, p_y = 0.287, p_size = 0.371, skew = 0.206
+*** Added sample 44, p_x = 0.180, p_y = 0.338, p_size = 0.398, skew = 0.250
+**** Calibrating ****
+mono pinhole calibration...
+*** Added sample 45, p_x = 0.260, p_y = 0.147, p_size = 0.360, skew = 0.131
+*** Added sample 46, p_x = 0.419, p_y = 0.067, p_size = 0.329, skew = 0.148
+D = [-0.0806182293521623, 0.11541280386475525, 6.732993062398188e-05, -0.0005217159940827625, 0.0]
+K = [1298.970437412947, 0.0, 654.2626564553016, 0.0, 1298.7906720199921, 515.3464521459885, 0.0, 0.0, 1.0]
+R = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+P = [1281.23486328125, 0.0, 653.4076214654488, 0.0, 0.0, 1284.7095947265625, 514.9331098134935, 0.0, 0.0, 0.0, 1.0, 0.0]
+None
+# oST version 5.0 parameters
+
+
+[image]
+
+width
+1280
+
+height
+1024
+
+[luxi_cu013]
+
+camera matrix
+1298.970437 0.000000 654.262656
+0.000000 1298.790672 515.346452
+0.000000 0.000000 1.000000
+
+distortion
+-0.080618 0.115413 0.000067 -0.000522 0.000000
+
+rectification
+1.000000 0.000000 0.000000
+0.000000 1.000000 0.000000
+0.000000 0.000000 1.000000
+
+projection
+1281.234863 0.000000 653.407621 0.000000
+0.000000 1284.709595 514.933110 0.000000
+0.000000 0.000000 1.000000 0.000000
+
+('Wrote calibration data to', '/tmp/calibrationdata.tar.gz')
+^CException in thread Thread-3:
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+Traceback (most recent call last):
+    self.run()
+  File "/opt/ros/humble/lib/python3.10/site-packages/camera_calibration/camera_calibrator.py", line 79, in run
+    rclpy.spin(self.node)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 229, in spin
+    executor.spin_once()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 808, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 797, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 780, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 681, in _wait_for_ready_callbacks
+    raise ExternalShutdownException()
+rclpy.executors.ExternalShutdownException
+  File "/opt/ros/humble/lib/camera_calibration/cameracalibrator", line 33, in <module>
+    sys.exit(load_entry_point('camera-calibration==3.0.9', 'console_scripts', 'cameracalibrator')())
+  File "/opt/ros/humble/lib/python3.10/site-packages/camera_calibration/nodes/cameracalibrator.py", line 226, in main
+    node.spin()
+  File "/opt/ros/humble/lib/python3.10/site-packages/camera_calibration/camera_calibrator.py", line 272, in spin
+    time.sleep(0.1)
+KeyboardInterrupt
+terminate called without an active exception
+^C
+

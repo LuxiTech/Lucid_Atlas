@@ -1,0 +1,88 @@
+network_status_node:
+  ros__parameters:
+    status_topic: /web/network_status
+    check_period_sec: 5.0
+    network_mode: same_wifi
+    wifi_interface: wlP1p1s0
+    bind_address: ""
+    http_port: 8080
+    api_port: 8082
+
+command_guard_node:
+  ros__parameters:
+    input_cmd_topic: /web/cmd_vel
+    estop_topic: /web/estop
+    goal_topic: /web/goal_pose
+    accepted_cmd_topic: /web/accepted_cmd_vel
+    control_status_topic: /web/control_status
+    enable_passthrough: true
+    output_cmd_topic: /cmd_vel
+    max_linear_x: 0.50
+    max_linear_y: 0.50
+    max_angular_z: 0.50
+    linear_x_output_scale: 1.0
+    linear_y_output_scale: 1.0
+    angular_z_output_scale: 1.0
+    command_timeout_sec: 0.30
+
+demo_state_node:
+  ros__parameters:
+    system_status_topic: /web/system_status
+    accepted_cmd_topic: /web/accepted_cmd_vel
+    enable_passthrough: true
+    output_cmd_topic: /cmd_vel
+    publish_period_sec: 1.0
+
+web_api_node:
+  ros__parameters:
+    bind_address: ""
+    api_port: 8082
+    input_cmd_topic: /web/cmd_vel
+    estop_topic: /web/estop
+    goal_topic: /web/goal_pose
+    rgb_image_topic: /hikrobot/cu013/rgb_img
+    compressed_image_topic: /hikrobot/cu013/rgb_img/compressed
+    camera_parameter_node: /hikrobot/cu013/hikrobot_cu013_camera_node
+    jpeg_quality: 80
+    map_topic: /map
+    static_cloud_topic: /luxi_localization/map_cloud_floor
+    live_cloud_topic: /luxi_localization/aligned_cloud_floor
+    static_cloud_3d_topic: /luxi_localization/map_cloud
+    live_cloud_3d_topic: /luxi_localization/aligned_cloud
+    mapping_cloud_topic: /Laser_map
+    project_mapping_cloud_to_floor: true
+    project_saved_pcd_to_floor: true
+    auto_fit_floor_plane: true
+    floor_plane_fit_iterations: 240
+    floor_plane_fit_max_points: 12000
+    floor_plane_fit_distance_threshold: 0.08
+    floor_plane_fit_min_inlier_ratio: 0.02
+    floor_plane_fit_min_abs_normal_z: 0.45
+    floor_plane_fit_height_band: 0.18
+    floor_plane_fit_min_height_bin_ratio: 0.01
+    floor_plane_fit_min_peak_ratio: 0.25
+    floor_plane: [-0.357093, 0.006594, 0.934045, 1.001688]
+    pose_topic: /localization_2d
+    odom_topic: /Odometry
+    initial_pose_topic: /initialpose
+    localization_status_topic: /luxi_localization/status
+    nav_path_topic: /nav/path
+    nav_local_path_topic: /nav/local_path
+    nav_costmap_topic: /nav/costmap
+    nav_cmd_topic: /nav/cmd_vel
+    nav_status_topic: /nav/status
+    map_save_service: /map_save_with_name
+    saved_maps_dir: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/maps
+    pcd_to_pgm_binary: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/tools/transfrom_tools/pcd_to_pgm/build/pcd2pgm
+    pcd_to_pgm_output_dir: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/tools/transfrom_tools/pcd_to_pgm/output
+    converted_map_min_z: 0.05
+    converted_map_max_z: 0.50
+    converted_map_min_component_cells: 10
+    converted_map_suffix: _nav_floor_plane_autofit_h005_050_clean10
+    max_grid_cells: 250000
+    max_static_cloud_points: 60000
+    max_live_cloud_points: 12000
+    max_mapping_cloud_points: 15000
+    system_status_topic: /web/system_status
+    control_status_topic: /web/control_status
+    network_status_topic: /web/network_status

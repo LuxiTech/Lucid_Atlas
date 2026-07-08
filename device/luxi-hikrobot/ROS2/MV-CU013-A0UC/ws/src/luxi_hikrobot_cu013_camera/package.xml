@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>luxi_hikrobot_cu013_camera</name>
+  <version>0.1.0</version>
+  <description>ROS2 sample driver node for Hikrobot MV-CU013-A0UC camera.</description>
+  <maintainer email="xiaofang@luxitech.cn">fxx</maintainer>
+  <license>Proprietary</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>image_transport</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

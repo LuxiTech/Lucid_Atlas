@@ -1,0 +1,22 @@
+pointcloud_to_laserscan:
+  ros__parameters:
+    target_frame: odom
+    min_height: -0.03
+    max_height: 0.03
+    range_min: 0.60
+    range_max: 30.0
+
+scan_boundary_filter:
+  ros__parameters:
+    min_range: 0.60
+    max_range: 8.0
+    median_window: 7
+    min_cluster_size: 4
+    outlier_jump_threshold: 0.25
+    boundary_only: true
+    edge_jump_threshold: 0.18
+    edge_keep_neighbors: 1
+
+tuning_gui:
+  ros__parameters:
+    edge_clarity: 60

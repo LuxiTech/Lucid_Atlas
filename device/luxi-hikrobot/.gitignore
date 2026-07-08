@@ -1,0 +1,7 @@
+SDK/
+**/build/
+**/build-*/
+**/install/
+**/log/
+MvSdkLog/
+*.log

@@ -1,0 +1,100 @@
+/**:
+  ros__parameters:
+    common:
+      img_topic: "/hikrobot/cu013/rgb_img"
+      lid_topic: "/livox/lidar"
+      imu_topic: "/livox/imu"
+      img_en: 1
+      lidar_en: 1
+      ros_driver_bug_fix: false
+
+    extrin_calib:
+      # MID360 LiDAR-to-IMU initial extrinsic. Keep identity rotation unless a
+      # better MID360 factory/measured value is available.
+      extrinsic_T: [-0.011, -0.02329, 0.04412]
+      extrinsic_R: [1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0,
+                    0.0, 0.0, 1.0]
+
+      # FAST-Calib multi-scene result, T_cam_lidar.
+      Rcl: [-0.015294, -0.999880, -0.002580,
+             0.378963, -0.003409, -0.925406,
+             0.925285, -0.015130,  0.378969]
+      Pcl: [0.001784, -0.116871, -0.008189]
+
+    time_offset:
+      # Keep the raw MID360 IMU/LiDAR time base. The original integer-second
+      # round fix oscillates near 0.5 s on this STM32 sync setup, so it is
+      # disabled above instead of applying a manual half-second shift.
+      imu_time_offset: 0.0
+      # Camera driver stamps images with host time, while MID360 uses the MCU
+      # simulated PPS/GPS time base. Enable runtime calibration so each mapping
+      # process measures image-to-LiDAR offset from the first received frames.
+      auto_img_time_offset: true
+      # Manual fallback used only when auto_img_time_offset is false.
+      img_time_offset: 0.0
+      exposure_time_init: 0.0
+
+    preprocess:
+      point_filter_num: 1
+      filter_size_surf: 0.1
+      lidar_type: 1 # Livox MID360/Avia CustomMsg branch
+      scan_line: 4
+      blind: 0.5
+
+    vio:
+      max_iterations: 5
+      outlier_threshold: 1000
+      img_point_cov: 100
+      patch_size: 8
+      patch_pyrimid_level: 4
+      normal_en: true
+      raycast_en: false
+      inverse_composition_en: false
+      exposure_estimate_en: true
+      inv_expo_cov: 0.1
+
+    imu:
+      imu_en: true
+      imu_int_frame: 30
+      acc_cov: 0.8
+      gyr_cov: 0.5
+      b_acc_cov: 0.001
+      b_gyr_cov: 0.001
+
+    lio:
+      max_iterations: 5
+      dept_err: 0.02
+      beam_err: 0.15
+      min_eigen_value: 0.005
+      voxel_size: 0.5
+      max_layer: 2
+      max_points_num: 50
+      layer_init_num: [5, 5, 5, 5, 5]
+
+    local_map:
+      map_sliding_en: false
+      half_map_size: 100
+      sliding_thresh: 8.0
+
+    uav:
+      imu_rate_odom: false
+      gravity_align_en: true
+
+    publish:
+      dense_map_en: false
+      pub_effect_point_en: false
+      pub_plane_en: false
+      pub_scan_num: 1
+      image_skip_num: 2
+      blind_rgb_points: 0.0
+
+    evo:
+      seq_name: "luxi_cu013_mid360"
+      pose_output_en: false
+
+    pcd_save:
+      pcd_save_en: true
+      colmap_output_en: false
+      filter_size_pcd: 0.15
+      interval: -1

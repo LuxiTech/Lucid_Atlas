@@ -1,0 +1,99 @@
+# Camera intrinsics  
+  # mid360
+  # fx: 843.501050605967
+  # fy: 845.199690011973
+  # cx: 321.017429415352
+  # cy: 239.294896816737
+  # k1: -0.465219389887045
+  # k2: 0.237050091701749
+  # p1: 0.00521922785740506
+  # p2: 0.000418186016514835
+
+  # avia
+  # fx: 1215.31801774424
+  # fy: 1214.72961288138
+  # cx: 1047.86571859677
+  # cy: 745.068353101898
+  # k1: -0.33574781188503
+  # k2: 0.10996870793601
+  # p1: 0.000157303079833973
+  # p2: 0.000544930726278493
+
+  # ouster
+  # fx: 1466.16500795563
+  # fy: 1465.32657394431
+  # cx: 1214.39964380518
+  # cy: 1010.97681425650
+  # k1: -0.0458344972140773
+  # k2: 0.0896961240772692
+  # p1: -0.000731746350601389
+  # p2: -0.000201478932371979
+
+  # MV-CH120 scaled image, 1280x938, calibrated with ROS camera_calibration
+  # fx: 572.0162140278187
+  # fy: 571.7680439852071
+  # cx: 631.6866556296139
+  # cy: 475.5073131365260
+  # k1: -0.1155948167580738
+  # k2: 0.0460948237586511
+  # p1: -0.0007438622090965
+  # p2: -0.0005478506141701
+
+
+  # MV-CU013-A0UC, 1280x1024, calibrated with ROS2 camera_calibration
+  fx: 1298.970437412947
+  fy: 1298.7906720199921
+  cx: 654.2626564553016
+  cy: 515.3464521459885
+  k1: -0.0806182293521623
+  k2: 0.11541280386475525
+  p1: 0.00006732993062398188
+  p2: -0.0005217159940827625
+
+# Calibration target parameters
+  marker_size: 0.20 # ArUco marker side length, 200 mm
+  delta_width_qr_center: 0.55 # Half horizontal distance between marker centers, 1100 / 2 mm
+  delta_height_qr_center: 0.35 # Half vertical distance between marker centers, 700 / 2 mm
+  delta_width_circles: 0.5 # Horizontal distance between circle centers, 500 mm
+  delta_height_circles: 0.4 # Vertical distance between circle centers, 400 mm
+  circle_radius: 0.12 # Circle radius, 240 / 2 mm
+
+# Distance filter
+  # x_min: 3.0 # avia and mid360: 2.0 ouster: 1.5
+  # x_max: 5.0
+  # y_min: -0.5
+  # y_max: 3.0
+  # z_min: 0.0 # avia and mid360: -0.5 ouster: -0.8
+  # z_max: 2.0
+
+# multi_scene_11
+  # x_min: 2.0
+  # x_max: 5.0
+  # y_min: -1.0
+  # y_max: 1.0
+  # z_min: 0.0
+  # z_max: 2.0
+# multi_scene_22
+  # x_min: 2.0
+  # x_max: 5.0
+  # y_min: -4.0
+  # y_max: 1.0
+  # z_min: 0.0
+  # z_max: 2.0
+# luxi_cu013_mid360 initial board crop
+# Board straight-line distance is expected around 1.0-2.0 m. In Livox frame, x is roughly forward.
+# Keep this box slightly wider than the target and tighten it after checking in RViz.
+  x_min: 0.5
+  x_max: 2
+  y_min: -1.0
+  y_max: 1.0
+  z_min: -0.5
+  z_max: 1.5
+
+# Input
+  lidar_topic: "/livox/lidar" # /ouster/points /livox/lidar
+  bag_path: "$(find fast_calib)/calib_data/luxi_cu013_mid360/scene01.bag"
+  image_path: "$(find fast_calib)/calib_data/luxi_cu013_mid360/scene01.jpg"
+
+# Output
+  output_path: "$(find fast_calib)/output/luxi_cu013_mid360"

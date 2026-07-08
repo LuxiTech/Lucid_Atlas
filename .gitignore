@@ -1,0 +1,70 @@
+# Local Codex / automation metadata
+.agents/
+.codex/
+
+# Demo projects are kept in the working tree for reference, but not tracked.
+demo/
+
+# ROS 2 / colcon build products
+build/
+install/
+log/
+**/build/
+**/install/
+**/log/
+**/devel/
+.colcon/
+log_latest/
+
+# Generic generated output directories
+output/
+outputs/
+Log/
+**/output/
+**/outputs/
+**/Log/
+
+# Local dependency/package caches
+.local_ros_debs/
+.cache/
+3rdparty_downloads/
+
+# Runtime logs and SDK logs
+MvSdkLog/
+*.log
+nohup.out
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# CMake / compiler artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+*.o
+*.so
+*.a
+*.dylib
+
+# Python / Node package outputs
+*.egg-info/
+dist/
+node_modules/
+package-lock.json
+
+# Editor / OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

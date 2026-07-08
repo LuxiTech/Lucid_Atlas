@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>go2_field_config</name>
+  <version>0.0.1</version>
+  <description>Configuration assets for GO2 field localization and navigation.</description>
+
+  <maintainer email="dev@example.com">luxi</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+

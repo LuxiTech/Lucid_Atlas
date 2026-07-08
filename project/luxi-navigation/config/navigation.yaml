@@ -1,0 +1,49 @@
+luxi_navigation_node:
+  ros__parameters:
+    map_topic: /map
+    goal_topic: /web/goal_pose
+    pose_topic: /localization_2d
+    odom_topic: /Odometry
+    path_topic: /nav/path
+    local_path_topic: /nav/local_path
+    costmap_topic: /nav/costmap
+    status_topic: /nav/status
+    frame_id: map
+
+    allow_odom_fallback: false
+    occupied_threshold: 65
+    unknown_is_occupied: true
+    robot_radius_m: 0.28
+    extra_inflation_m: 0.10
+    start_snap_max_m: 2.00
+    goal_snap_max_m: 1.00
+    max_iterations: 900000
+    max_plan_time_sec: 3.0
+    simplify_epsilon_m: 0.08
+    replan_on_goal: true
+    replan_on_pose_update: false
+    min_replan_period_sec: 0.5
+
+    # DWB-style local planner dry-run output. Keep this on /nav/cmd_vel while
+    # validating; remap to /cmd_vel only when ready for closed-loop motion.
+    controller_enabled: true
+    cmd_vel_topic: /nav/cmd_vel
+    controller_frequency: 10.0
+    max_vel_x: 0.22
+    min_vel_x: 0.0
+    min_nonzero_vel_x: 0.08
+    max_vel_theta: 0.75
+    dwb_linear_samples: 6
+    dwb_angular_samples: 13
+    dwb_sim_time: 2.0
+    dwb_time_step: 0.1
+    dwb_path_distance_bias: 8.0
+    dwb_goal_distance_bias: 4.0
+    dwb_heading_bias: 1.5
+    dwb_velocity_bias: 0.4
+    dwb_stopped_trajectory_penalty: 2.0
+    dwb_collision_check_radius: 0.05
+    dwb_start_collision_grace_m: 0.25
+    goal_tolerance_xy: 0.18
+    goal_tolerance_yaw: 0.35
+    lookahead_distance: 0.60
