@@ -118,7 +118,7 @@ Go2 相关包、MID360 驱动、海康相机节点和 Open3D 依赖可能需要�
 设备重启后，在终端执行下面命令启动完整网页控制系统：
 
 ```bash
-cd /home/nvidia/project/luxi-atlas && source third_party/go2_ros2/setup.sh && source install/setup.bash && WIFI_IP=$(ip -4 -o addr show wlP1p1s0 | awk '{split($4,a,"/"); print a[1]; exit}') && echo "Android Web URL: http://${WIFI_IP}:8082" && ros2 launch luxi_web_control web_navigation.launch.py wifi_interface:=wlP1p1s0 bind_address:=0.0.0.0
+cd /home/nvidia/project/luxi-atlas && source third_party/go2_ros2/setup.sh && source install/setup.bash && WIFI_IP=$(ip -4 -o addr show wlP1p1s0 | awk '{split($4,a,"/"); print a[1]; exit}') && echo "Android Web URL: http://${WIFI_IP}:8082" && ros2 launch luxi_web_control web_navigation.launch.py wifi_interface:=wlP1p1s0 bind_address:=0.0.0.0 start_legacy_http:=false
 ```
 
 启动后，手机和设备连接到同一个 WiFi，在手机浏览器打开终端打印的地址，例如：
@@ -136,7 +136,7 @@ http://10.42.0.149:8082
 - C++ 网页/API 服务，默认端口 `8082`。
 - 网页控制速度输出，默认转发到 `/cmd_vel`。
 
-旧版 Python 静态网页服务端口 `8080` 默认不启动，只有显式传入 `start_legacy_http:=true` 才会启动。
+推荐启动命令会显式传入 `start_legacy_http:=false`，不启动旧版 Python 静态网页服务端口 `8080`；只有改为 `start_legacy_http:=true` 才会启动。
 
 ## Go2 机器狗控制链路
 
