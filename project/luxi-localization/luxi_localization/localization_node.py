@@ -65,6 +65,10 @@ class Open3DLocalizationNode(Node):
         self.declare_parameter("initial_pose_coordinate_frame", "floor")
         self.declare_parameter("initial_pose_z_mode", "floor_plane")
         self.declare_parameter("initial_pose_height", 0.0)
+        self.declare_parameter("initial_yaw_search_enable", False)
+        self.declare_parameter("initial_yaw_search_range_deg", 180.0)
+        self.declare_parameter("initial_yaw_search_step_deg", 30.0)
+        self.declare_parameter("initial_yaw_search_min_fitness", 0.15)
         self.declare_parameter("live_floor_alignment_enable", True)
         self.declare_parameter("allow_initial_pose_without_live_floor", True)
         self.declare_parameter("live_floor_fit_min_points", 250)
@@ -155,6 +159,18 @@ class Open3DLocalizationNode(Node):
         ).value
         self.initial_pose_z_mode = self.get_parameter("initial_pose_z_mode").value
         self.initial_pose_height = float(self.get_parameter("initial_pose_height").value)
+        self.initial_yaw_search_enable = bool(
+            self.get_parameter("initial_yaw_search_enable").value
+        )
+        self.initial_yaw_search_range = np.deg2rad(
+            float(self.get_parameter("initial_yaw_search_range_deg").value)
+        )
+        self.initial_yaw_search_step = np.deg2rad(
+            max(1.0, float(self.get_parameter("initial_yaw_search_step_deg").value))
+        )
+        self.initial_yaw_search_min_fitness = float(
+            self.get_parameter("initial_yaw_search_min_fitness").value
+        )
         self.live_floor_alignment_enable = bool(
             self.get_parameter("live_floor_alignment_enable").value
         )
@@ -313,6 +329,7 @@ class Open3DLocalizationNode(Node):
         self.pending_map_t_body = None
         self.pending_map_t_odom = None
         self.initial_pose_map_body = None
+        self.initial_yaw_search_pending = False
         self.icp_locked = False
         self.icp_good_count = 0
         self.icp_hold_until_monotonic = 0.0
@@ -506,6 +523,7 @@ class Open3DLocalizationNode(Node):
         applied_odom_t_body = None
         with self.lock:
             self.initial_pose_map_body = initial_pose
+            self.initial_yaw_search_pending = True
             self.has_initial_pose = False if self.require_initial_pose else True
             self.icp_locked = False
             self._reset_icp_tracking_locked()
@@ -540,13 +558,16 @@ class Open3DLocalizationNode(Node):
             "accepted initial pose from %s as map->%s"
             % (self.initial_pose_topic, self.initial_pose_mode)
         )
+        _, _, _, initial_yaw = self._floor_pose_components(initial_pose)
         self._publish_debug_text(
-            "initial_pose mode=%s xyz=(%.3f, %.3f, %.3f)"
+            "initial_pose mode=%s xyz=(%.3f, %.3f, %.3f) yaw=%.1fdeg base_yaw_offset=%.1fdeg"
             % (
                 self.initial_pose_mode,
                 initial_pose[0, 3],
                 initial_pose[1, 3],
                 initial_pose[2, 3],
+                np.rad2deg(initial_yaw),
+                self.base_yaw_offset_deg,
             )
         )
         if applied_map_t_odom is not None and applied_odom_t_body is not None:
@@ -645,6 +666,22 @@ class Open3DLocalizationNode(Node):
 
         with self.lock:
             initial_acquisition = not self.icp_locked
+            initial_yaw_search_pending = self.initial_yaw_search_pending
+        if (
+            initial_acquisition
+            and initial_yaw_search_pending
+            and self.initial_yaw_search_enable
+        ):
+            searched_map_t_odom, search_summary = self._search_initial_yaw(
+                source, target, map_t_odom, odom_t_body
+            )
+            with self.lock:
+                self.initial_yaw_search_pending = False
+                if searched_map_t_odom is not None:
+                    self.map_t_odom = searched_map_t_odom
+                    map_t_odom = searched_map_t_odom.copy()
+                    init = map_t_odom
+            self._publish_debug_text(search_summary)
         result, raw_icp_map_t_odom = self._run_icp(source, target, init, initial_acquisition)
         accepted = (
             result.fitness >= self.min_fitness_to_accept
@@ -1274,6 +1311,72 @@ class Open3DLocalizationNode(Node):
         )
         return fine_result, np.asarray(fine_result.transformation, dtype=np.float64)
 
+    def _search_initial_yaw(self, source, target, init, odom_t_body):
+        if self.initial_yaw_search_step <= 0.0 or self.initial_yaw_search_range <= 0.0:
+            return None, "initial_yaw_search skipped: invalid range/step"
+
+        initial_map_t_body = init @ odom_t_body
+        x, y, height, yaw = self._floor_pose_components(initial_map_t_body)
+        max_steps = int(round(self.initial_yaw_search_range / self.initial_yaw_search_step))
+        offsets = [0.0]
+        for step in range(1, max_steps + 1):
+            offset = step * self.initial_yaw_search_step
+            if offset <= self.initial_yaw_search_range + 1e-6:
+                offsets.append(offset)
+                offsets.append(-offset)
+
+        best = None
+        best_score = -1.0
+        best_offset = 0.0
+        best_rmse = float("inf")
+        for offset in offsets:
+            candidate_body = self._matrix_from_floor_pose(
+                x, y, height, self._normalize_angle(yaw + offset)
+            )
+            candidate_init = candidate_body @ inverse_matrix(odom_t_body)
+            result, raw_map_t_odom = self._run_icp(source, target, candidate_init, True)
+            candidate_map_t_odom = raw_map_t_odom
+            if self.constrain_icp_to_floor:
+                candidate_map_t_odom = self._constrain_map_t_odom_to_floor(
+                    candidate_init, candidate_map_t_odom, odom_t_body
+                )
+            score = float(result.fitness / max(1.0, 1.0 + result.inlier_rmse))
+            if (
+                result.fitness >= self.initial_yaw_search_min_fitness
+                and (
+                    score > best_score
+                    or (abs(score - best_score) < 1e-9 and result.inlier_rmse < best_rmse)
+                )
+            ):
+                best = candidate_map_t_odom
+                best_score = score
+                best_offset = offset
+                best_rmse = float(result.inlier_rmse)
+
+        if best is None:
+            return (
+                None,
+                "initial_yaw_search no_match candidates=%d min_fitness=%.3f"
+                % (len(offsets), self.initial_yaw_search_min_fitness),
+            )
+
+        best_body = best @ odom_t_body
+        _, _, _, best_yaw = self._floor_pose_components(best_body)
+        return (
+            best,
+            (
+                "initial_yaw_search selected offset=%.1fdeg yaw=%.1fdeg "
+                "score=%.3f rmse=%.3f candidates=%d"
+            )
+            % (
+                np.rad2deg(best_offset),
+                np.rad2deg(best_yaw),
+                best_score,
+                best_rmse,
+                len(offsets),
+            ),
+        )
+
     def _validate_alignment(self, source, target, map_t_odom):
         if not self.enable_alignment_validation:
             return True, "alignment=disabled"
@@ -1519,6 +1622,14 @@ class Open3DLocalizationNode(Node):
                     self.base_t_body = inverse_matrix(self.body_t_base)
                 elif name == "initial_pose_is_base_frame":
                     self.initial_pose_is_base_frame = bool(value)
+                elif name == "initial_yaw_search_enable":
+                    self.initial_yaw_search_enable = bool(value)
+                elif name == "initial_yaw_search_range_deg":
+                    self.initial_yaw_search_range = np.deg2rad(float(value))
+                elif name == "initial_yaw_search_step_deg":
+                    self.initial_yaw_search_step = np.deg2rad(max(1.0, float(value)))
+                elif name == "initial_yaw_search_min_fitness":
+                    self.initial_yaw_search_min_fitness = float(value)
                 elif name == "allow_initial_pose_without_live_floor":
                     self.allow_initial_pose_without_live_floor = bool(value)
                 elif name == "live_floor_fit_min_points":

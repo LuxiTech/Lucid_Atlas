@@ -75,10 +75,12 @@ web_api_node:
     saved_maps_dir: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/maps
     pcd_to_pgm_binary: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/tools/transfrom_tools/pcd_to_pgm/build/pcd2pgm
     pcd_to_pgm_output_dir: /home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/tools/transfrom_tools/pcd_to_pgm/output
-    converted_map_min_z: 0.05
-    converted_map_max_z: 0.50
-    converted_map_min_component_cells: 10
-    converted_map_suffix: _nav_floor_plane_autofit_h005_050_clean10
+    converted_map_min_z: 0.50
+    converted_map_max_z: 2.00
+    converted_map_min_component_cells: 30
+    converted_map_auto_floor_target_obstacle_ratio: 0.18
+    converted_map_auto_floor_max_obstacle_ratio: 0.35
+    converted_map_suffix: _nav_floor_plane_autofit_h050_200_clean30
     max_grid_cells: 250000
     max_static_cloud_points: 60000
     max_live_cloud_points: 12000
