@@ -42,6 +42,7 @@ def _launch_nodes(context):
     pkg_share = get_package_share_directory("luxi_web_control")
     web_root = os.path.join(pkg_share, "web")
     config_file = os.path.join(pkg_share, "config", "web_control.yaml")
+    mdns_script = os.path.join(pkg_share, "scripts", "ensure_lucid_atlas_mdns.sh")
 
     wifi_interface = LaunchConfiguration("wifi_interface").perform(context)
     requested_bind_address = LaunchConfiguration("bind_address").perform(context).strip()
@@ -53,6 +54,17 @@ def _launch_nodes(context):
     map_metadata_path = LaunchConfiguration("map_metadata_path")
 
     return [
+        ExecuteProcess(
+            cmd=[
+                "bash",
+                mdns_script,
+                LaunchConfiguration("wifi_interface"),
+                api_port,
+                "lucid-atlas",
+            ],
+            output="screen",
+            condition=IfCondition(LaunchConfiguration("start_lucid_mdns")),
+        ),
         Node(
             package="luxi_web_control",
             executable="network_status_node",
@@ -170,6 +182,14 @@ def generate_launch_description():
                 "start_legacy_http",
                 default_value="true",
                 description="Start the old Python static web server on http_port for compatibility.",
+            ),
+            DeclareLaunchArgument(
+                "start_lucid_mdns",
+                default_value="false",
+                description=(
+                    "Refresh lucid-atlas.local Avahi publishing and the local port 80 "
+                    "proxy when the web stack starts."
+                ),
             ),
             OpaqueFunction(function=_launch_nodes),
         ]

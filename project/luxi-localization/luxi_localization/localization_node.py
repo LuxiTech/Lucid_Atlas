@@ -66,7 +66,8 @@ class Open3DLocalizationNode(Node):
         self.declare_parameter("initial_pose_z_mode", "floor_plane")
         self.declare_parameter("initial_pose_height", 0.0)
         self.declare_parameter("live_floor_alignment_enable", True)
-        self.declare_parameter("live_floor_fit_min_points", 800)
+        self.declare_parameter("allow_initial_pose_without_live_floor", True)
+        self.declare_parameter("live_floor_fit_min_points", 250)
         self.declare_parameter("live_floor_fit_distance_threshold", 0.08)
         self.declare_parameter("live_floor_fit_ransac_n", 3)
         self.declare_parameter("live_floor_fit_iterations", 200)
@@ -156,6 +157,9 @@ class Open3DLocalizationNode(Node):
         self.initial_pose_height = float(self.get_parameter("initial_pose_height").value)
         self.live_floor_alignment_enable = bool(
             self.get_parameter("live_floor_alignment_enable").value
+        )
+        self.allow_initial_pose_without_live_floor = bool(
+            self.get_parameter("allow_initial_pose_without_live_floor").value
         )
         self.live_floor_fit_min_points = int(
             self.get_parameter("live_floor_fit_min_points").value
@@ -515,13 +519,19 @@ class Open3DLocalizationNode(Node):
                 return
             if self.initial_pose_mode == "odom":
                 self.map_t_odom = initial_pose
-            elif self.live_floor_alignment_enable and self.live_floor_normal_odom is None:
+            elif (
+                self.live_floor_alignment_enable
+                and self.live_floor_normal_odom is None
+                and not self.allow_initial_pose_without_live_floor
+            ):
                 self.pending_map_t_body = initial_pose
                 self._publish_status_text("waiting for live floor plane")
                 self.get_logger().warn("stored initial pose; waiting for live floor plane")
                 return
             else:
                 self.map_t_odom = self._initial_map_t_odom_locked(initial_pose, self.odom_t_body)
+                if self.live_floor_alignment_enable and self.live_floor_normal_odom is None:
+                    self._publish_status_text("initial pose accepted before live floor plane")
             self.has_initial_pose = True
             self._reset_icp_tracking_locked()
             applied_map_t_odom = self.map_t_odom.copy()
@@ -1509,6 +1519,14 @@ class Open3DLocalizationNode(Node):
                     self.base_t_body = inverse_matrix(self.body_t_base)
                 elif name == "initial_pose_is_base_frame":
                     self.initial_pose_is_base_frame = bool(value)
+                elif name == "allow_initial_pose_without_live_floor":
+                    self.allow_initial_pose_without_live_floor = bool(value)
+                elif name == "live_floor_fit_min_points":
+                    self.live_floor_fit_min_points = int(value)
+                elif name == "live_floor_fit_ransac_n":
+                    self.live_floor_fit_ransac_n = int(value)
+                elif name == "live_floor_fit_iterations":
+                    self.live_floor_fit_iterations = int(value)
                 elif name == "live_floor_min_inlier_ratio":
                     self.live_floor_min_inlier_ratio = float(value)
                 elif name == "live_floor_min_abs_body_z":

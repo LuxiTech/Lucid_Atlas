@@ -25,7 +25,8 @@ luxi_open3d_localization:
     initial_pose_z_mode: floor_plane
     initial_pose_height: 0.0
     live_floor_alignment_enable: true
-    live_floor_fit_min_points: 800
+    allow_initial_pose_without_live_floor: true
+    live_floor_fit_min_points: 250
     live_floor_fit_distance_threshold: 0.08
     live_floor_fit_ransac_n: 3
     live_floor_fit_iterations: 200

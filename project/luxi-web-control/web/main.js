@@ -239,6 +239,9 @@ window.addEventListener("unhandledrejection", (event) => {
     if (window.LUXI_WEB_CONFIG && window.LUXI_WEB_CONFIG.api_base_url) {
       return String(window.LUXI_WEB_CONFIG.api_base_url).replace(/\/+$/, "");
     }
+    if (window.location.protocol === "http:" && (window.location.port === "" || window.location.port === "80")) {
+      return window.location.origin;
+    }
     if (window.location.port === configuredApiPort) {
       return window.location.origin;
     }
