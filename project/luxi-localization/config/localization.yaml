@@ -30,6 +30,7 @@ luxi_open3d_localization:
     initial_yaw_search_range_deg: 180.0
     initial_yaw_search_step_deg: 30.0
     initial_yaw_search_min_fitness: 0.15
+    initial_pose_reacquire_timeout_sec: 8.0
     live_floor_alignment_enable: true
     allow_initial_pose_without_live_floor: true
     live_floor_fit_min_points: 250
@@ -57,14 +58,14 @@ luxi_open3d_localization:
     min_scan_points: 200
     min_local_map_points: 1000
     max_scan_points: 60000
-    min_fitness_to_accept: 0.45
-    max_rmse_to_accept: 0.45
-    max_icp_translation_correction: 0.80
-    max_icp_rotation_correction_deg: 8.0
-    max_initial_icp_translation_correction: 0.60
-    max_initial_icp_rotation_correction_deg: 30.0
+    min_fitness_to_accept: 0.88
+    max_rmse_to_accept: 0.25
+    max_icp_translation_correction: 0.25
+    max_icp_rotation_correction_deg: 12.0
+    max_initial_icp_translation_correction: 1.20
+    max_initial_icp_rotation_correction_deg: 45.0
     constrain_icp_to_floor: true
-    icp_correction_smoothing: 0.25
+    icp_correction_smoothing: 1.0
     initial_icp_correction_smoothing: 1.0
     enable_multiscale_icp: true
     coarse_scan_voxel_size: 0.45
@@ -72,7 +73,9 @@ luxi_open3d_localization:
     coarse_max_correspondence_distance: 0.90
     initial_coarse_max_correspondence_distance: 1.50
     coarse_icp_max_iteration: 35
-    enable_alignment_validation: true
+    # Corridor-like maps can make the dominant wall plane switch by about 90 deg,
+    # so keep ICP validation on fitness/rmse/correction instead of this plane gate.
+    enable_alignment_validation: false
     alignment_max_floor_normal_angle_deg: 8.0
     alignment_max_dominant_plane_angle_deg: 12.0
     alignment_validation_min_points: 600
@@ -80,7 +83,7 @@ luxi_open3d_localization:
     alignment_validation_distance_threshold: 0.10
     alignment_validation_ransac_iterations: 120
     icp_initial_hold_sec: 0.0
-    icp_required_consecutive_accepts: 1
+    icp_required_consecutive_accepts: 3
     min_update_period_sec: 0.5
 
     publish_map_cloud: true

@@ -40,7 +40,6 @@
 #include "rcl_interfaces/msg/parameter.hpp"
 #include "rcl_interfaces/msg/parameter_type.hpp"
 #include "rcl_interfaces/msg/parameter_value.hpp"
-#include "rcl_interfaces/srv/get_parameters.hpp"
 #include "rcl_interfaces/srv/set_parameters.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
@@ -318,7 +317,6 @@ public:
     declare_parameter<std::string>("nav_cmd_topic", "/nav/cmd_vel");
     declare_parameter<std::string>("nav_stop_topic", "/nav/stop");
     declare_parameter<std::string>("nav_status_topic", "/nav/status");
-    declare_parameter<std::string>("nav_parameter_node", "/luxi_navigation_node");
     declare_parameter<std::string>("map_save_service", "/map_save_with_name");
     declare_parameter<std::string>("saved_maps_dir",
       "/home/nvidia/project/luxi-atlas/project/luxi-atlas-lio/maps");
@@ -353,11 +351,6 @@ public:
     const auto camera_parameter_node = get_parameter("camera_parameter_node").as_string();
     camera_set_parameters_client_ = create_client<rcl_interfaces::srv::SetParameters>(
       camera_parameter_node + "/set_parameters");
-    const auto nav_parameter_node = get_parameter("nav_parameter_node").as_string();
-    nav_get_parameters_client_ = create_client<rcl_interfaces::srv::GetParameters>(
-      nav_parameter_node + "/get_parameters");
-    nav_set_parameters_client_ = create_client<rcl_interfaces::srv::SetParameters>(
-      nav_parameter_node + "/set_parameters");
     map_save_client_ = create_client<fast_lio::srv::SaveMap>(
       get_parameter("map_save_service").as_string());
     image_sub_ = create_subscription<sensor_msgs::msg::Image>(
@@ -902,38 +895,6 @@ private:
         "\"stop_topic\":\"/nav/stop\"}");
     }
 
-    if (
-      (req.method() == http::verb::get || req.method() == http::verb::post) &&
-      target == "/api/nav/config")
-    {
-      if (req.method() == http::verb::post) {
-        const double max_vel_x = std::clamp(
-          extract_number(req.body(), "max_vel_x", 0.22), 0.05, 0.80);
-        const double min_nonzero_vel_x = std::clamp(
-          extract_number(req.body(), "min_nonzero_vel_x", std::min(0.10, max_vel_x)),
-          0.0, max_vel_x);
-        const double max_vel_theta = std::clamp(
-          extract_number(req.body(), "max_vel_theta", 0.75), 0.10, 2.00);
-        const double dwb_velocity_bias = std::clamp(
-          extract_number(req.body(), "dwb_velocity_bias", 0.4), 0.0, 5.0);
-        std::string error;
-        if (!set_navigation_config(max_vel_x, min_nonzero_vel_x, max_vel_theta, dwb_velocity_bias, error)) {
-          return make_json_response(
-            req, http::status::service_unavailable,
-            "{\"ok\":false,\"error\":\"" + json_escape(error) + "\"}");
-        }
-      }
-
-      std::string json;
-      std::string error;
-      if (!get_navigation_config(json, error)) {
-        return make_json_response(
-          req, http::status::service_unavailable,
-          "{\"ok\":false,\"error\":\"" + json_escape(error) + "\"}");
-      }
-      return make_json_response(req, http::status::ok, json);
-    }
-
     if (req.method() == http::verb::post && target == "/api/estop") {
       std_msgs::msg::Bool msg;
       msg.data = extract_bool(req.body(), "active", true);
@@ -1051,99 +1012,6 @@ private:
       }
     }
 
-    return true;
-  }
-
-  bool set_navigation_config(
-    const double max_vel_x,
-    const double min_nonzero_vel_x,
-    const double max_vel_theta,
-    const double dwb_velocity_bias,
-    std::string & error)
-  {
-    if (!nav_set_parameters_client_) {
-      error = "navigation parameter client is not initialized";
-      return false;
-    }
-    if (!nav_set_parameters_client_->wait_for_service(std::chrono::milliseconds(500))) {
-      error = "navigation parameter service is not available";
-      return false;
-    }
-
-    auto request = std::make_shared<rcl_interfaces::srv::SetParameters::Request>();
-    request->parameters.push_back(make_double_parameter("max_vel_x", max_vel_x));
-    request->parameters.push_back(make_double_parameter("min_nonzero_vel_x", min_nonzero_vel_x));
-    request->parameters.push_back(make_double_parameter("max_vel_theta", max_vel_theta));
-    request->parameters.push_back(make_double_parameter("dwb_velocity_bias", dwb_velocity_bias));
-
-    auto future = nav_set_parameters_client_->async_send_request(request);
-    const auto status = future.wait_for(std::chrono::seconds(2));
-    if (status != std::future_status::ready) {
-      error = "navigation parameter service timed out";
-      return false;
-    }
-
-    const auto response = future.get();
-    for (const auto & result : response->results) {
-      if (!result.successful) {
-        error = result.reason.empty() ? "navigation rejected parameter update" : result.reason;
-        return false;
-      }
-    }
-
-    RCLCPP_INFO(
-      get_logger(),
-      "updated navigation config max_vel_x=%.3f min_nonzero_vel_x=%.3f max_vel_theta=%.3f velocity_bias=%.3f",
-      max_vel_x, min_nonzero_vel_x, max_vel_theta, dwb_velocity_bias);
-    return true;
-  }
-
-  bool get_navigation_config(std::string & json, std::string & error)
-  {
-    if (!nav_get_parameters_client_) {
-      error = "navigation parameter client is not initialized";
-      return false;
-    }
-    if (!nav_get_parameters_client_->wait_for_service(std::chrono::milliseconds(500))) {
-      error = "navigation parameter service is not available";
-      return false;
-    }
-
-    auto request = std::make_shared<rcl_interfaces::srv::GetParameters::Request>();
-    request->names = {
-      "max_vel_x",
-      "min_nonzero_vel_x",
-      "max_vel_theta",
-      "dwb_velocity_bias"
-    };
-
-    auto future = nav_get_parameters_client_->async_send_request(request);
-    const auto status = future.wait_for(std::chrono::seconds(2));
-    if (status != std::future_status::ready) {
-      error = "navigation parameter service timed out";
-      return false;
-    }
-
-    const auto response = future.get();
-    if (response->values.size() != request->names.size()) {
-      error = "navigation parameter response size mismatch";
-      return false;
-    }
-
-    auto double_value = [](const rcl_interfaces::msg::ParameterValue & value) {
-      if (value.type == rcl_interfaces::msg::ParameterType::PARAMETER_INTEGER) {
-        return static_cast<double>(value.integer_value);
-      }
-      return value.double_value;
-    };
-
-    std::ostringstream out;
-    out << "{\"ok\":true,"
-        << "\"max_vel_x\":" << double_value(response->values[0]) << ","
-        << "\"min_nonzero_vel_x\":" << double_value(response->values[1]) << ","
-        << "\"max_vel_theta\":" << double_value(response->values[2]) << ","
-        << "\"dwb_velocity_bias\":" << double_value(response->values[3]) << "}";
-    json = out.str();
     return true;
   }
 
@@ -3112,8 +2980,6 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr nav_stop_pub_;
   rclcpp::Client<rcl_interfaces::srv::SetParameters>::SharedPtr camera_set_parameters_client_;
-  rclcpp::Client<rcl_interfaces::srv::GetParameters>::SharedPtr nav_get_parameters_client_;
-  rclcpp::Client<rcl_interfaces::srv::SetParameters>::SharedPtr nav_set_parameters_client_;
   rclcpp::Client<fast_lio::srv::SaveMap>::SharedPtr map_save_client_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
   rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_image_sub_;

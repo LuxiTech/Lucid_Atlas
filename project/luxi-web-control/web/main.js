@@ -81,12 +81,6 @@ window.addEventListener("unhandledrejection", (event) => {
   const resetMapViewBtn = document.getElementById("reset-map-view-btn");
   const navStartBtn = document.getElementById("nav-start-btn");
   const navStopBtn = document.getElementById("nav-stop-btn");
-  const navMaxVx = document.getElementById("nav-max-vx");
-  const navMinVx = document.getElementById("nav-min-vx");
-  const navMaxWz = document.getElementById("nav-max-wz");
-  const navVelocityBias = document.getElementById("nav-velocity-bias");
-  const navRefreshConfigBtn = document.getElementById("nav-refresh-config-btn");
-  const navApplyConfigBtn = document.getElementById("nav-apply-config-btn");
 
   let ros = null;
   let cmdTopic = null;
@@ -649,61 +643,6 @@ window.addEventListener("unhandledrejection", (event) => {
         pollMapSnapshot();
       })
       .catch(() => setMapStatus("导航控制API未连接"));
-  }
-
-  function fillNavigationConfig(data) {
-    if (!data || !data.ok) {
-      return;
-    }
-    navMaxVx.value = Number(data.max_vel_x || 0).toFixed(2);
-    navMinVx.value = Number(data.min_nonzero_vel_x || 0).toFixed(2);
-    navMaxWz.value = Number(data.max_vel_theta || 0).toFixed(2);
-    navVelocityBias.value = Number(data.dwb_velocity_bias || 0).toFixed(2);
-  }
-
-  function refreshNavigationConfig() {
-    fetch(`${defaultApiBaseUrl()}/api/nav/config`)
-      .then((res) => res.json().then((data) => ({ ok: res.ok && data.ok, data })))
-      .then(({ ok, data }) => {
-        if (!ok) {
-          setMapStatus(data.error || "读取导航速度失败");
-          return;
-        }
-        fillNavigationConfig(data);
-        setMapStatus(
-          `导航速度 vx=${Number(data.max_vel_x).toFixed(2)} m/s wz=${Number(data.max_vel_theta).toFixed(2)} rad/s`,
-        );
-      })
-      .catch(() => setMapStatus("读取导航速度API未连接"));
-  }
-
-  function applyNavigationConfig() {
-    const maxVelX = Number(navMaxVx.value || 0.22);
-    const minVelX = Math.min(Number(navMinVx.value || 0.08), maxVelX);
-    const maxVelTheta = Number(navMaxWz.value || 0.75);
-    const velocityBias = Number(navVelocityBias.value || 0.4);
-    fetch(`${defaultApiBaseUrl()}/api/nav/config`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        max_vel_x: maxVelX,
-        min_nonzero_vel_x: minVelX,
-        max_vel_theta: maxVelTheta,
-        dwb_velocity_bias: velocityBias,
-      }),
-    })
-      .then((res) => res.json().then((data) => ({ ok: res.ok && data.ok, data })))
-      .then(({ ok, data }) => {
-        if (!ok) {
-          setMapStatus(data.error || "应用导航速度失败");
-          return;
-        }
-        fillNavigationConfig(data);
-        setMapStatus(
-          `已应用导航速度 vx=${Number(data.max_vel_x).toFixed(2)} m/s wz=${Number(data.max_vel_theta).toFixed(2)} rad/s`,
-        );
-      })
-      .catch(() => setMapStatus("应用导航速度API未连接"));
   }
 
   function currentHeadingYaw() {
@@ -2484,8 +2423,6 @@ window.addEventListener("unhandledrejection", (event) => {
   sendGoalBtn.addEventListener("click", publishGoal);
   navStartBtn.addEventListener("click", () => requestNavigationDrive("/api/nav/start", "导航已出发：DWB速度将转发到底盘控制链路"));
   navStopBtn.addEventListener("click", () => requestNavigationDrive("/api/nav/stop", "导航已停止，已发送零速度"));
-  navRefreshConfigBtn.addEventListener("click", refreshNavigationConfig);
-  navApplyConfigBtn.addEventListener("click", applyNavigationConfig);
   pickGoalBtn.addEventListener("click", () => {
     if (!snapshotHasMapData(mapSnapshot)) {
       pickingGoal = false;
@@ -2685,7 +2622,6 @@ window.addEventListener("unhandledrejection", (event) => {
   pollApiStatus();
   pollMapSnapshot();
   pollMappingStatus();
-  refreshNavigationConfig();
   refreshSavedMaps();
   renderCloud3d();
   renderMappingPreview3d();

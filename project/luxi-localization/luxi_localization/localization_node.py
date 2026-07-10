@@ -69,6 +69,7 @@ class Open3DLocalizationNode(Node):
         self.declare_parameter("initial_yaw_search_range_deg", 180.0)
         self.declare_parameter("initial_yaw_search_step_deg", 30.0)
         self.declare_parameter("initial_yaw_search_min_fitness", 0.15)
+        self.declare_parameter("initial_pose_reacquire_timeout_sec", 8.0)
         self.declare_parameter("live_floor_alignment_enable", True)
         self.declare_parameter("allow_initial_pose_without_live_floor", True)
         self.declare_parameter("live_floor_fit_min_points", 250)
@@ -101,8 +102,8 @@ class Open3DLocalizationNode(Node):
         self.declare_parameter("max_rmse_to_accept", 1.5)
         self.declare_parameter("max_icp_translation_correction", 8.0)
         self.declare_parameter("max_icp_rotation_correction_deg", 25.0)
-        self.declare_parameter("max_initial_icp_translation_correction", 0.60)
-        self.declare_parameter("max_initial_icp_rotation_correction_deg", 15.0)
+        self.declare_parameter("max_initial_icp_translation_correction", 1.20)
+        self.declare_parameter("max_initial_icp_rotation_correction_deg", 45.0)
         self.declare_parameter("constrain_icp_to_floor", True)
         self.declare_parameter("icp_correction_smoothing", 1.0)
         self.declare_parameter("initial_icp_correction_smoothing", 0.25)
@@ -112,7 +113,7 @@ class Open3DLocalizationNode(Node):
         self.declare_parameter("coarse_max_correspondence_distance", 0.90)
         self.declare_parameter("initial_coarse_max_correspondence_distance", 1.50)
         self.declare_parameter("coarse_icp_max_iteration", 35)
-        self.declare_parameter("enable_alignment_validation", True)
+        self.declare_parameter("enable_alignment_validation", False)
         self.declare_parameter("alignment_max_floor_normal_angle_deg", 8.0)
         self.declare_parameter("alignment_max_dominant_plane_angle_deg", 12.0)
         self.declare_parameter("alignment_validation_min_points", 600)
@@ -170,6 +171,9 @@ class Open3DLocalizationNode(Node):
         )
         self.initial_yaw_search_min_fitness = float(
             self.get_parameter("initial_yaw_search_min_fitness").value
+        )
+        self.initial_pose_reacquire_timeout_sec = max(
+            0.0, float(self.get_parameter("initial_pose_reacquire_timeout_sec").value)
         )
         self.live_floor_alignment_enable = bool(
             self.get_parameter("live_floor_alignment_enable").value
@@ -330,6 +334,8 @@ class Open3DLocalizationNode(Node):
         self.pending_map_t_odom = None
         self.initial_pose_map_body = None
         self.initial_yaw_search_pending = False
+        self.initial_pose_reacquire_pending = False
+        self.initial_pose_reacquire_until_monotonic = 0.0
         self.icp_locked = False
         self.icp_good_count = 0
         self.icp_hold_until_monotonic = 0.0
@@ -499,6 +505,10 @@ class Open3DLocalizationNode(Node):
                 self.pending_map_t_odom = None
                 self.has_initial_pose = True
                 self.icp_locked = False
+                self.initial_pose_reacquire_pending = True
+                self.initial_pose_reacquire_until_monotonic = (
+                    time.monotonic() + self.initial_pose_reacquire_timeout_sec
+                )
                 self._reset_icp_tracking_locked()
             if (
                 self.pending_map_t_body is not None
@@ -513,6 +523,10 @@ class Open3DLocalizationNode(Node):
                 self.pending_map_t_body = None
                 self.has_initial_pose = True
                 self.icp_locked = False
+                self.initial_pose_reacquire_pending = True
+                self.initial_pose_reacquire_until_monotonic = (
+                    time.monotonic() + self.initial_pose_reacquire_timeout_sec
+                )
                 self._reset_icp_tracking_locked()
 
     def _on_initial_pose(self, msg):
@@ -524,6 +538,10 @@ class Open3DLocalizationNode(Node):
         with self.lock:
             self.initial_pose_map_body = initial_pose
             self.initial_yaw_search_pending = True
+            self.initial_pose_reacquire_pending = True
+            self.initial_pose_reacquire_until_monotonic = (
+                time.monotonic() + self.initial_pose_reacquire_timeout_sec
+            )
             self.has_initial_pose = False if self.require_initial_pose else True
             self.icp_locked = False
             self._reset_icp_tracking_locked()
@@ -626,10 +644,17 @@ class Open3DLocalizationNode(Node):
                 self.pending_map_t_body = None
                 self.has_initial_pose = True
                 self.icp_locked = False
+                self.initial_pose_reacquire_pending = True
+                self.initial_pose_reacquire_until_monotonic = (
+                    time.monotonic() + self.initial_pose_reacquire_timeout_sec
+                )
                 self._reset_icp_tracking_locked()
                 map_t_odom = self.map_t_odom.copy()
                 has_initial_pose = True
                 self._publish_debug_text("initial pose applied after live floor plane fit")
+            else:
+                map_t_odom = self.map_t_odom.copy()
+                has_initial_pose = self.has_initial_pose
 
         if np.asarray(source.points).shape[0] < self.min_scan_points:
             self._publish_status_text(
@@ -665,8 +690,19 @@ class Open3DLocalizationNode(Node):
             return
 
         with self.lock:
-            initial_acquisition = not self.icp_locked
+            phase_now = time.monotonic()
+            reacquire_window_active = phase_now < self.initial_pose_reacquire_until_monotonic
+            if self.initial_pose_reacquire_pending or reacquire_window_active:
+                self.icp_locked = False
+            initial_acquisition = (
+                (not self.icp_locked)
+                or self.initial_pose_reacquire_pending
+                or reacquire_window_active
+            )
             initial_yaw_search_pending = self.initial_yaw_search_pending
+            reacquire_remaining = max(
+                0.0, self.initial_pose_reacquire_until_monotonic - phase_now
+            )
         if (
             initial_acquisition
             and initial_yaw_search_pending
@@ -737,7 +773,7 @@ class Open3DLocalizationNode(Node):
             (
                 "icp fitness=%.3f rmse=%.3f target=%d source=%d "
                 "corr_t=%.3f/%.3f corr_rot_deg=%.2f/%.2f phase=%s "
-                "accepted=%s good=%d/%d hold=%.1fs %s"
+                "accepted=%s good=%d/%d hold=%.1fs reacquire=%s %.1fs %s"
             )
             % (
                 result.fitness,
@@ -753,6 +789,8 @@ class Open3DLocalizationNode(Node):
                 good_count,
                 self.icp_required_consecutive_accepts,
                 hold_remaining,
+                str(initial_acquisition).lower(),
+                reacquire_remaining,
                 alignment_summary,
             )
         )
@@ -776,6 +814,8 @@ class Open3DLocalizationNode(Node):
                 with self.lock:
                     self.map_t_odom = new_map_t_odom
                     self.icp_locked = True
+                    self.initial_pose_reacquire_pending = False
+                    self.initial_pose_reacquire_until_monotonic = 0.0
                     self.icp_good_count = min(
                         self.icp_good_count, self.icp_required_consecutive_accepts
                     )
@@ -1056,11 +1096,17 @@ class Open3DLocalizationNode(Node):
         )
         return map_t_odom
 
+    def _clear_live_floor_locked(self):
+        self.live_floor_normal_odom = None
+        self.live_floor_d_odom = None
+        self.live_floor_inlier_ratio = 0.0
+
     def _update_live_floor_plane_locked(self, source_odom, odom_t_body):
         if not self.live_floor_alignment_enable:
             return
         points = np.asarray(source_odom.points)
         if points.shape[0] < self.live_floor_fit_min_points:
+            self._clear_live_floor_locked()
             return
         fit_points = points
         body_up = np.asarray(odom_t_body[:3, 2], dtype=np.float64)
@@ -1079,6 +1125,7 @@ class Open3DLocalizationNode(Node):
             if candidate_points.shape[0] >= self.live_floor_fit_min_points:
                 fit_points = candidate_points
             else:
+                self._clear_live_floor_locked()
                 self._publish_status_text(
                     "live floor low band too small: %d < %d"
                     % (candidate_points.shape[0], self.live_floor_fit_min_points)
@@ -1094,39 +1141,46 @@ class Open3DLocalizationNode(Node):
                 num_iterations=self.live_floor_fit_iterations,
             )
         except RuntimeError as exc:
+            self._clear_live_floor_locked()
             self.get_logger().warn("live floor plane fit failed: %s" % exc, throttle_duration_sec=5.0)
             return
 
         ratio = len(inliers) / max(1, fit_points.shape[0])
         if ratio < self.live_floor_min_inlier_ratio:
+            self._clear_live_floor_locked()
             self._publish_status_text("live floor plane weak: ratio=%.3f" % ratio)
             return
 
         normal = np.asarray(plane_model[:3], dtype=np.float64)
         norm = np.linalg.norm(normal)
         if norm < 1e-9:
+            self._clear_live_floor_locked()
             return
         normal = normal / norm
-        plane_d = float(plane_model[3]) / norm
+        signed_plane_d = float(plane_model[3]) / norm
         if np.dot(normal, body_up) < 0.0:
             normal = -normal
-            plane_d = -plane_d
+            signed_plane_d = -signed_plane_d
+        sensor_height = abs(signed_plane_d)
 
         body_up_alignment = abs(float(np.dot(normal, body_up)))
         if body_up_alignment < self.live_floor_min_abs_body_z:
+            self._clear_live_floor_locked()
             self._publish_status_text(
                 "live floor plane rejected: body_z_alignment=%.3f < %.3f"
                 % (body_up_alignment, self.live_floor_min_abs_body_z)
             )
             return
         if (
-            plane_d < self.live_floor_min_sensor_height
-            or plane_d > self.live_floor_max_sensor_height
+            sensor_height < self.live_floor_min_sensor_height
+            or sensor_height > self.live_floor_max_sensor_height
         ):
+            self._clear_live_floor_locked()
             self._publish_status_text(
-                "live floor plane rejected: sensor_height=%.3f outside %.2f..%.2f"
+                "live floor plane rejected: sensor_height=%.3f signed_d=%.3f outside %.2f..%.2f"
                 % (
-                    plane_d,
+                    sensor_height,
+                    signed_plane_d,
                     self.live_floor_min_sensor_height,
                     self.live_floor_max_sensor_height,
                 )
@@ -1134,15 +1188,16 @@ class Open3DLocalizationNode(Node):
             return
 
         self.live_floor_normal_odom = normal
-        self.live_floor_d_odom = plane_d
+        self.live_floor_d_odom = sensor_height
         self.live_floor_inlier_ratio = ratio
         self._publish_debug_text(
-            "live_floor_plane normal=(%.3f %.3f %.3f) d=%.3f ratio=%.3f points=%d fit=%d"
+            "live_floor_plane normal=(%.3f %.3f %.3f) sensor_height=%.3f signed_d=%.3f ratio=%.3f points=%d fit=%d"
             % (
                 normal[0],
                 normal[1],
                 normal[2],
-                plane_d,
+                sensor_height,
+                signed_plane_d,
                 ratio,
                 points.shape[0],
                 fit_points.shape[0],
@@ -1630,6 +1685,8 @@ class Open3DLocalizationNode(Node):
                     self.initial_yaw_search_step = np.deg2rad(max(1.0, float(value)))
                 elif name == "initial_yaw_search_min_fitness":
                     self.initial_yaw_search_min_fitness = float(value)
+                elif name == "initial_pose_reacquire_timeout_sec":
+                    self.initial_pose_reacquire_timeout_sec = max(0.0, float(value))
                 elif name == "allow_initial_pose_without_live_floor":
                     self.allow_initial_pose_without_live_floor = bool(value)
                 elif name == "live_floor_fit_min_points":
