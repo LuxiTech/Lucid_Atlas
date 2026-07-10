@@ -129,6 +129,10 @@ public:
     declare_parameter<double>("dwb_stopped_trajectory_penalty", 2.0);
     declare_parameter<double>("dwb_collision_check_radius", 0.28);
     declare_parameter<double>("dwb_start_collision_grace_m", 0.25);
+    declare_parameter<bool>("dwb_narrow_passage_fallback_enable", true);
+    declare_parameter<double>("dwb_narrow_passage_min_vel_x", 0.08);
+    declare_parameter<double>("dwb_narrow_passage_max_vel_x", 0.24);
+    declare_parameter<int>("dwb_narrow_passage_linear_samples", 4);
     declare_parameter<double>("goal_tolerance_xy", 0.18);
     declare_parameter<double>("goal_tolerance_yaw", 0.35);
     declare_parameter<double>("lookahead_distance", 0.60);
@@ -856,24 +860,50 @@ private:
       get_parameter("min_nonzero_vel_x").as_double(), 0.0, max_v);
     const double max_w = std::max(0.05, get_parameter("max_vel_theta").as_double());
 
-    DwbSample best;
-    bool found = false;
-    for (int i = 0; i < linear_samples; ++i) {
-      double linear = 0.0;
-      if (i > 0 && max_v > 0.0) {
-        const double ratio = linear_samples > 2 ?
-          static_cast<double>(i - 1) / static_cast<double>(linear_samples - 2) : 1.0;
-        linear = min_positive_v + (max_v - min_positive_v) * ratio;
-      }
-      for (int j = 0; j < angular_samples; ++j) {
-        const double ar = static_cast<double>(j) / static_cast<double>(angular_samples - 1);
-        const double angular = -max_w + 2.0 * max_w * ar;
-        DwbSample sample;
-        if (!score_dwb_sample(robot, linear, angular, sample)) {
-          continue;
+    auto search_samples =
+      [&](const double search_min_v, const double search_max_v, const int search_linear_samples,
+        const bool include_zero, DwbSample & best_sample) {
+        bool sample_found = false;
+        const int first_sample = include_zero ? 0 : 1;
+        for (int i = first_sample; i < search_linear_samples; ++i) {
+          double linear = 0.0;
+          if (i > 0 && search_max_v > 0.0) {
+            const double ratio = search_linear_samples > 2 ?
+              static_cast<double>(i - 1) / static_cast<double>(search_linear_samples - 2) : 1.0;
+            linear = search_min_v + (search_max_v - search_min_v) * ratio;
+          }
+          for (int j = 0; j < angular_samples; ++j) {
+            const double ar = static_cast<double>(j) / static_cast<double>(angular_samples - 1);
+            const double angular = -max_w + 2.0 * max_w * ar;
+            DwbSample sample;
+            if (!score_dwb_sample(robot, linear, angular, sample)) {
+              continue;
+            }
+            if (!sample_found || sample.score < best_sample.score) {
+              best_sample = sample;
+              sample_found = true;
+            }
+          }
         }
-        if (!found || sample.score < best.score) {
-          best = sample;
+        return sample_found;
+      };
+
+    DwbSample best;
+    bool found = search_samples(min_positive_v, max_v, linear_samples, true, best);
+
+    const bool fallback_enabled = get_parameter("dwb_narrow_passage_fallback_enable").as_bool();
+    if (fallback_enabled && (!found || std::abs(best.linear) < 1e-6)) {
+      const int fallback_samples =
+        std::max<int64_t>(2, get_parameter("dwb_narrow_passage_linear_samples").as_int());
+      const double fallback_max_param =
+        std::max(0.0, get_parameter("dwb_narrow_passage_max_vel_x").as_double());
+      const double fallback_max_v = std::min(max_v, fallback_max_param);
+      if (fallback_max_v > 0.0) {
+        const double fallback_min_v = std::clamp(
+          get_parameter("dwb_narrow_passage_min_vel_x").as_double(), 0.0, fallback_max_v);
+        DwbSample fallback_best;
+        if (search_samples(fallback_min_v, fallback_max_v, fallback_samples, false, fallback_best)) {
+          best = fallback_best;
           found = true;
         }
       }

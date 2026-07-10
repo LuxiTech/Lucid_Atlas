@@ -32,7 +32,7 @@ luxi_open3d_localization:
     initial_yaw_search_min_fitness: 0.15
     initial_pose_reacquire_timeout_sec: 8.0
     live_floor_alignment_enable: true
-    allow_initial_pose_without_live_floor: true
+    allow_initial_pose_without_live_floor: false
     live_floor_fit_min_points: 250
     live_floor_fit_distance_threshold: 0.08
     live_floor_fit_ransac_n: 3
@@ -44,6 +44,9 @@ luxi_open3d_localization:
     live_floor_band_max_quantile: 0.35
     live_floor_min_sensor_height: 0.20
     live_floor_max_sensor_height: 1.50
+    live_floor_max_map_normal_angle_deg: 14.0
+    live_floor_stable_frames: 3
+    live_floor_max_frame_normal_angle_deg: 6.0
     floor_plane: [-0.357093, 0.006594, 0.934045, 1.001688]
 
     map_voxel_size: 0.25

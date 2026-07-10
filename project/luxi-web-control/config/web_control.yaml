@@ -17,7 +17,7 @@ command_guard_node:
     control_status_topic: /web/control_status
     enable_passthrough: true
     output_cmd_topic: /cmd_vel
-    max_linear_x: 0.50
+    max_linear_x: 1.00
     max_linear_y: 0.50
     max_angular_z: 0.50
     linear_x_output_scale: 1.0

@@ -83,6 +83,9 @@ class Open3DLocalizationNode(Node):
         self.declare_parameter("live_floor_band_max_quantile", 0.35)
         self.declare_parameter("live_floor_min_sensor_height", 0.20)
         self.declare_parameter("live_floor_max_sensor_height", 1.50)
+        self.declare_parameter("live_floor_max_map_normal_angle_deg", 14.0)
+        self.declare_parameter("live_floor_stable_frames", 3)
+        self.declare_parameter("live_floor_max_frame_normal_angle_deg", 6.0)
         self.declare_parameter(
             "floor_plane",
             [-0.357093, 0.006594, 0.934045, 1.001688],
@@ -211,6 +214,15 @@ class Open3DLocalizationNode(Node):
         )
         self.live_floor_max_sensor_height = float(
             self.get_parameter("live_floor_max_sensor_height").value
+        )
+        self.live_floor_max_map_normal_angle = np.deg2rad(
+            max(0.0, float(self.get_parameter("live_floor_max_map_normal_angle_deg").value))
+        )
+        self.live_floor_stable_frames = max(
+            1, int(self.get_parameter("live_floor_stable_frames").value)
+        )
+        self.live_floor_max_frame_normal_angle = np.deg2rad(
+            max(0.0, float(self.get_parameter("live_floor_max_frame_normal_angle_deg").value))
         )
         self.floor_plane = np.asarray(self.get_parameter("floor_plane").value, dtype=np.float64)
         self._load_floor_plane_from_metadata(self.map_metadata_path)
@@ -342,6 +354,9 @@ class Open3DLocalizationNode(Node):
         self.live_floor_normal_odom = None
         self.live_floor_d_odom = None
         self.live_floor_inlier_ratio = 0.0
+        self.live_floor_candidate_normal_odom = None
+        self.live_floor_candidate_d_odom = None
+        self.live_floor_candidate_stable_count = 0
         self.has_initial_pose = not self.require_initial_pose
         self.scan_buffer_odom = deque(maxlen=self.scan_accumulate_frames)
         self.last_update_monotonic = 0.0
@@ -1100,6 +1115,18 @@ class Open3DLocalizationNode(Node):
         self.live_floor_normal_odom = None
         self.live_floor_d_odom = None
         self.live_floor_inlier_ratio = 0.0
+        self.live_floor_candidate_normal_odom = None
+        self.live_floor_candidate_d_odom = None
+        self.live_floor_candidate_stable_count = 0
+
+    def _vector_angle(self, a, b):
+        a = np.asarray(a, dtype=np.float64)
+        b = np.asarray(b, dtype=np.float64)
+        a_norm = np.linalg.norm(a)
+        b_norm = np.linalg.norm(b)
+        if a_norm < 1e-12 or b_norm < 1e-12:
+            return float("inf")
+        return float(np.arccos(np.clip(np.dot(a / a_norm, b / b_norm), -1.0, 1.0)))
 
     def _update_live_floor_plane_locked(self, source_odom, odom_t_body):
         if not self.live_floor_alignment_enable:
@@ -1187,11 +1214,85 @@ class Open3DLocalizationNode(Node):
             )
             return
 
+        map_normal, _ = self._map_floor_model()
+        map_normal_angle = self._vector_angle(normal, map_normal)
+        if map_normal_angle > self.live_floor_max_map_normal_angle:
+            self.live_floor_candidate_normal_odom = None
+            self.live_floor_candidate_d_odom = None
+            self.live_floor_candidate_stable_count = 0
+            self._publish_status_text(
+                "live floor rejected: map_normal_angle=%.1fdeg > %.1fdeg"
+                % (
+                    np.rad2deg(map_normal_angle),
+                    np.rad2deg(self.live_floor_max_map_normal_angle),
+                )
+            )
+            self.get_logger().warn(
+                (
+                    "live floor rejected: map_normal_angle=%.1fdeg > %.1fdeg "
+                    "normal=(%.3f %.3f %.3f) map=(%.3f %.3f %.3f)"
+                )
+                % (
+                    np.rad2deg(map_normal_angle),
+                    np.rad2deg(self.live_floor_max_map_normal_angle),
+                    normal[0],
+                    normal[1],
+                    normal[2],
+                    map_normal[0],
+                    map_normal[1],
+                    map_normal[2],
+                ),
+                throttle_duration_sec=3.0,
+            )
+            return
+
+        candidate_angle = 0.0
+        if self.live_floor_candidate_normal_odom is not None:
+            candidate_angle = self._vector_angle(normal, self.live_floor_candidate_normal_odom)
+        if (
+            self.live_floor_candidate_normal_odom is not None
+            and candidate_angle <= self.live_floor_max_frame_normal_angle
+        ):
+            self.live_floor_candidate_stable_count += 1
+        else:
+            self.live_floor_candidate_stable_count = 1
+        self.live_floor_candidate_normal_odom = normal
+        self.live_floor_candidate_d_odom = sensor_height
+
+        if self.live_floor_candidate_stable_count < self.live_floor_stable_frames:
+            self._publish_status_text(
+                "live floor stabilizing: %d/%d angle_to_map=%.1fdeg"
+                % (
+                    self.live_floor_candidate_stable_count,
+                    self.live_floor_stable_frames,
+                    np.rad2deg(map_normal_angle),
+                )
+            )
+            self._publish_debug_text(
+                (
+                    "live_floor_candidate normal=(%.3f %.3f %.3f) "
+                    "sensor_height=%.3f map_angle=%.1fdeg stable=%d/%d"
+                )
+                % (
+                    normal[0],
+                    normal[1],
+                    normal[2],
+                    sensor_height,
+                    np.rad2deg(map_normal_angle),
+                    self.live_floor_candidate_stable_count,
+                    self.live_floor_stable_frames,
+                )
+            )
+            return
+
         self.live_floor_normal_odom = normal
         self.live_floor_d_odom = sensor_height
         self.live_floor_inlier_ratio = ratio
         self._publish_debug_text(
-            "live_floor_plane normal=(%.3f %.3f %.3f) sensor_height=%.3f signed_d=%.3f ratio=%.3f points=%d fit=%d"
+            (
+                "live_floor_plane normal=(%.3f %.3f %.3f) sensor_height=%.3f "
+                "signed_d=%.3f ratio=%.3f points=%d fit=%d map_angle=%.1fdeg stable=%d/%d"
+            )
             % (
                 normal[0],
                 normal[1],
@@ -1201,6 +1302,9 @@ class Open3DLocalizationNode(Node):
                 ratio,
                 points.shape[0],
                 fit_points.shape[0],
+                np.rad2deg(map_normal_angle),
+                self.live_floor_candidate_stable_count,
+                self.live_floor_stable_frames,
             )
         )
 

@@ -29,9 +29,9 @@ luxi_navigation_node:
     controller_enabled: true
     cmd_vel_topic: /nav/cmd_vel
     controller_frequency: 10.0
-    max_vel_x: 0.22
+    max_vel_x: 1.00
     min_vel_x: 0.0
-    min_nonzero_vel_x: 0.08
+    min_nonzero_vel_x: 0.24
     max_vel_theta: 0.75
     dwb_linear_samples: 6
     dwb_angular_samples: 13
@@ -44,6 +44,10 @@ luxi_navigation_node:
     dwb_stopped_trajectory_penalty: 2.0
     dwb_collision_check_radius: 0.05
     dwb_start_collision_grace_m: 0.25
+    dwb_narrow_passage_fallback_enable: true
+    dwb_narrow_passage_min_vel_x: 0.08
+    dwb_narrow_passage_max_vel_x: 0.24
+    dwb_narrow_passage_linear_samples: 4
     goal_tolerance_xy: 0.18
     goal_tolerance_yaw: 0.35
     lookahead_distance: 0.60
